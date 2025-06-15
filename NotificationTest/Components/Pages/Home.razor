@@ -1,10 +1,13 @@
 ﻿@page "/"
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
 
 <div class="container mt-4">
     <h1>Blazor 실시간 알림 시스템</h1>
-
+    <button type="button" @onclick="SendMessage">보내기</button>
     <div class="alert alert-info">
         <h4>🔔 실시간 알림 시스템 데모</h4>
         <p>이 페이지는 Blazor Server와 SignalR을 사용한 실시간 알림 시스템을 보여줍니다.</p>
@@ -83,3 +86,60 @@
         </div>
     </div>
 </div>
+
+
+@code {
+    private HubConnection? hubConnection;
+    private PopupItem? currentPopup;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+                .WithUrl(Navigation.ToAbsoluteUri("/notificationhub"))
+                .Build();
+
+        hubConnection.On<string, string, string>("ReceiveNotification", (title, message, type) =>
+        {
+            Console.WriteLine($"알림 수신: {title} - {message} - {type}");
+
+            var notification = new NotificationItem
+                {
+                    Id = 1,
+                    Title = title,
+                    Message = message,
+                    Type = type,
+                    Timestamp = DateTime.Now
+                };
+
+            InvokeAsync(StateHasChanged);
+
+            // 5초 후 자동 제거
+            _ = Task.Delay(5000).ContinueWith(_ =>
+            {
+                //RemoveNotification(notification.Id);
+            });
+        });
+
+        hubConnection.On<string, string, string>("ReceivePopup", (title, message, type) =>
+        {
+            Console.WriteLine($"팝업 수신: {title} - {message} - {type}");
+
+            currentPopup = new PopupItem
+                {
+                    Title = title,
+                    Message = message,
+                    Type = type
+                };
+
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+
+    private async void SendMessage()
+    {
+        await hubConnection.SendAsync("ReceiveNotification", "알림 제목", "알림 내용", "info");
+    }
+}
