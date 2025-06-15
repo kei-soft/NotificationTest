@@ -1,0 +1,85 @@
+﻿@page "/"
+
+<PageTitle>Home</PageTitle>
+
+<div class="container mt-4">
+    <h1>Blazor 실시간 알림 시스템</h1>
+
+    <div class="alert alert-info">
+        <h4>🔔 실시간 알림 시스템 데모</h4>
+        <p>이 페이지는 Blazor Server와 SignalR을 사용한 실시간 알림 시스템을 보여줍니다.</p>
+        <hr>
+        <p class="mb-0">
+            <a href="/notification-admin" class="btn btn-primary">알림 관리 페이지로 이동</a>
+        </p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>🍞 토스트 알림</h5>
+                </div>
+                <div class="card-body">
+                    <p>화면 우상단에 나타나는 임시 알림입니다.</p>
+                    <ul>
+                        <li>자동으로 5초 후 사라집니다</li>
+                        <li>여러 개 동시 표시 가능</li>
+                        <li>닫기 버튼으로 수동 제거 가능</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>🪟 팝업 메시지</h5>
+                </div>
+                <div class="card-body">
+                    <p>화면 중앙에 나타나는 모달 팝업입니다.</p>
+                    <ul>
+                        <li>사용자가 확인할 때까지 유지</li>
+                        <li>중요한 메시지에 적합</li>
+                        <li>하나씩만 표시됩니다</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>📋 기능 목록</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>✅ 구현된 기능</h6>
+                            <ul>
+                                <li>실시간 토스트 알림</li>
+                                <li>실시간 팝업 메시지</li>
+                                <li>모든 사용자에게 전송</li>
+                                <li>특정 사용자에게 전송</li>
+                                <li>특정 그룹에게 전송</li>
+                                <li>다양한 알림 타입 (정보, 성공, 경고, 오류)</li>
+                                <li>관리자 페이지</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>🔧 기술 스택</h6>
+                            <ul>
+                                <li>Blazor Server</li>
+                                <li>SignalR</li>
+                                <li>Bootstrap 5</li>
+                                <li>C# / .NET</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

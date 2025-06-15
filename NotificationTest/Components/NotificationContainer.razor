@@ -1,0 +1,136 @@
+﻿@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<!-- 토스트 알림 컨테이너 -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
+    @foreach (var notification in notifications)
+    {
+        <div class="toast show align-items-center text-bg-@GetBootstrapClass(notification.Type)" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>@notification.Title</strong><br />
+                    @notification.Message
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                        @onclick="() => RemoveNotification(notification.Id)"></button>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- 팝업 모달 -->
+@if (currentPopup != null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5)">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-@GetBootstrapClass(currentPopup.Type) text-white">
+                    <h5 class="modal-title">@currentPopup.Title</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="ClosePopup"></button>
+                </div>
+                <div class="modal-body">
+                    @currentPopup.Message
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @onclick="ClosePopup">확인</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private HubConnection? hubConnection;
+    private List<NotificationItem> notifications = new();
+    private PopupItem? currentPopup;
+    private int notificationIdCounter = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/notificationhub"))
+            .Build();
+
+        hubConnection.On<string, string, string>("ReceiveNotification", (title, message, type) =>
+        {
+            var notification = new NotificationItem
+                {
+                    Id = ++notificationIdCounter,
+                    Title = title,
+                    Message = message,
+                    Type = type,
+                    Timestamp = DateTime.Now
+                };
+
+            notifications.Add(notification);
+            InvokeAsync(StateHasChanged);
+
+            // 5초 후 자동 제거
+            _ = Task.Delay(5000).ContinueWith(_ =>
+            {
+                RemoveNotification(notification.Id);
+            });
+        });
+
+        hubConnection.On<string, string, string>("ReceivePopup", (title, message, type) =>
+        {
+            currentPopup = new PopupItem
+                {
+                    Title = title,
+                    Message = message,
+                    Type = type
+                };
+
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    private void RemoveNotification(int id)
+    {
+        notifications.RemoveAll(n => n.Id == id);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ClosePopup()
+    {
+        currentPopup = null;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private string GetBootstrapClass(string type) => type switch
+    {
+        "success" => "success",
+        "error" => "danger",
+        "warning" => "warning",
+        _ => "primary"
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+
+    private class NotificationItem
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = "";
+        public string Message { get; set; } = "";
+        public string Type { get; set; } = "info";
+        public DateTime Timestamp { get; set; }
+    }
+
+    private class PopupItem
+    {
+        public string Title { get; set; } = "";
+        public string Message { get; set; } = "";
+        public string Type { get; set; } = "info";
+    }
+}
