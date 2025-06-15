@@ -14,6 +14,8 @@ public class Program
 
         // SignalR 서비스 추가
         builder.Services.AddSignalR();
+        builder.Services.AddServerSideBlazor();
+        builder.Services.AddRazorPages();
 
         // 알림 서비스 추가
         builder.Services.AddScoped<NotificationService>();

@@ -255,7 +255,16 @@
                 ["error"] = "오류가 발생했습니다."
             };
 
-        await NotificationService.SendNotificationToAll(titles[type], messages[type], type);
+        try
+        {
+            Console.WriteLine($"알림 전송 시작: {type}");
+            await NotificationService.SendNotificationToAll(titles[type], messages[type], type);
+            Console.WriteLine($"알림 전송 완료: {type}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"알림 전송 오류: {ex.Message}");
+        }
     }
 
     private async Task SendQuickPopup()
