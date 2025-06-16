@@ -5,7 +5,6 @@
 
 <div class="container mt-4">
     <h1>Blazor 실시간 알림 시스템</h1>
-    <button type="button" @onclick="SendMessage">보내기</button>
     <div class="alert alert-info">
         <h4>🔔 실시간 알림 시스템 데모</h4>
         <p>이 페이지는 Blazor Server와 SignalR을 사용한 실시간 알림 시스템을 보여줍니다.</p>
@@ -84,21 +83,3 @@
         </div>
     </div>
 </div>
-
-
-@code {
-    
-    protected override async Task OnInitializedAsync()
-    {
-        
-    }
-    
-    @inject NotificationService NotificationService
-
-    private async void SendMessage()
-    {
-        await NotificationService.SendNotificationToAll("알림 제목", "알림 내용", "info");
-
-        //await hubConnection.SendAsync("ReceiveNotification", "알림 제목", "알림 내용", "info");
-    }
-}

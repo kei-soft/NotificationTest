@@ -86,7 +86,7 @@
                     // 5초 후 자동 제거
                     _ = Task.Delay(5000).ContinueWith(_ =>
                     {
-                        //RemoveNotification(notification.Id);
+                        RemoveNotification(notification.Id);
                     });
                 });
 
