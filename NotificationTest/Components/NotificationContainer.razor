@@ -1,18 +1,18 @@
 ﻿@using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.JSInterop
-@inject IJSRuntime JSRuntime
+@using NotificationTest.Common
 @inject NavigationManager Navigation
 @implements IAsyncDisposable
 @rendermode InteractiveServer
 
-<!-- 디버깅용 정보 -->
+<!-- 디버깅용 정보: SignalR 상태, 알림 개수, 팝업 여부 표시 -->
 <div style="position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; font-size: 12px; z-index: 9999;">
     <div>SignalR 상태: @(hubConnection?.State.ToString() ?? "미연결")</div>
     <div>알림 개수: @notifications.Count</div>
     <div>현재 팝업: @(currentPopup != null ? "있음" : "없음")</div>
 </div>
 
-<!-- 토스트 알림 컨테이너 -->
+<!-- 토스트 알림 컨테이너: 우상단에 여러 알림 표시 -->
 <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
     @foreach (var notification in notifications)
     {
@@ -22,6 +22,7 @@
                     <strong>@notification.Title</strong><br />
                     @notification.Message
                 </div>
+                <!-- 닫기 버튼: 알림 수동 제거 -->
                 <button type="button" class="btn-close btn-close-white me-2 m-auto"
                         @onclick="() => RemoveNotification(notification.Id)"></button>
             </div>
@@ -29,7 +30,7 @@
     }
 </div>
 
-<!-- 팝업 모달 -->
+<!-- 팝업 모달: 화면 중앙에 하나만 표시 -->
 @if (currentPopup != null)
 {
     <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5)">
@@ -37,6 +38,7 @@
             <div class="modal-content">
                 <div class="modal-header bg-@GetBootstrapClass(currentPopup.Type) text-white">
                     <h5 class="modal-title">@currentPopup.Title</h5>
+                    <!-- 닫기 버튼: 팝업 닫기 -->
                     <button type="button" class="btn-close btn-close-white" @onclick="ClosePopup"></button>
                 </div>
                 <div class="modal-body">
@@ -51,25 +53,35 @@
 }
 
 @code {
+    // SignalR 허브 연결 객체
     private HubConnection? hubConnection;
+    // 토스트 알림 목록
     private List<NotificationItem> notifications = new();
+    // 현재 표시 중인 팝업(하나만 표시)
     private PopupItem? currentPopup;
+    // 알림 고유 ID 카운터
     private int notificationIdCounter = 0;
 
-    protected  override async Task OnAfterRenderAsync(bool firstRender)
+    /// <summary>
+    /// 컴포넌트 렌더링 후 최초 1회 SignalR 연결 및 이벤트 핸들러 등록
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             try
             {
+                // SignalR 허브 연결 생성 및 설정
                 hubConnection = new HubConnectionBuilder()
                     .WithUrl(Navigation.ToAbsoluteUri("/notificationhub"))
                     .Build();
 
+                // 토스트 알림 수신 이벤트 등록
                 hubConnection.On<string, string, string>("ReceiveNotification", (title, message, type) =>
                 {
                     Console.WriteLine($"알림 수신: {title} - {message} - {type}");
 
+                    // 새 알림 객체 생성 및 목록에 추가
                     var notification = new NotificationItem
                         {
                             Id = ++notificationIdCounter,
@@ -83,17 +95,19 @@
                     Console.WriteLine($"알림 목록 개수: {notifications.Count}");
                     InvokeAsync(StateHasChanged);
 
-                    // 5초 후 자동 제거
+                    // 5초 후 자동으로 알림 제거
                     _ = Task.Delay(5000).ContinueWith(_ =>
                     {
                         RemoveNotification(notification.Id);
                     });
                 });
 
+                // 팝업 알림 수신 이벤트 등록
                 hubConnection.On<string, string, string>("ReceivePopup", (title, message, type) =>
                 {
                     Console.WriteLine($"팝업 수신: {title} - {message} - {type}");
 
+                    // 팝업 정보 갱신(하나만 표시)
                     currentPopup = new PopupItem
                         {
                             Title = title,
@@ -104,29 +118,39 @@
                     InvokeAsync(StateHasChanged);
                 });
 
+                // SignalR 서버에 연결 시작
                 await hubConnection.StartAsync();
                 Console.WriteLine($"SignalR 연결 상태: {hubConnection.State}");
             }
             catch (Exception ex)
             {
+                // 연결 실패 시 콘솔에 오류 출력
                 Console.WriteLine($"SignalR 연결 오류: {ex.Message}");
             }
         }
     }
 
-
+    /// <summary>
+    /// 알림 수동 제거(닫기 버튼 클릭 또는 자동 제거)
+    /// </summary>
     private void RemoveNotification(int id)
     {
         notifications.RemoveAll(n => n.Id == id);
         InvokeAsync(StateHasChanged);
     }
 
+    /// <summary>
+    /// 팝업 닫기(확인 버튼 또는 닫기 버튼 클릭)
+    /// </summary>
     private void ClosePopup()
     {
         currentPopup = null;
         InvokeAsync(StateHasChanged);
     }
 
+    /// <summary>
+    /// 알림/팝업 타입에 따라 Bootstrap 색상 클래스 반환
+    /// </summary>
     private string GetBootstrapClass(string type) => type switch
     {
         "success" => "success",
@@ -135,6 +159,9 @@
         _ => "primary"
     };
 
+    /// <summary>
+    /// 컴포넌트 해제 시 SignalR 연결 해제
+    /// </summary>
     public async ValueTask DisposeAsync()
     {
         if (hubConnection is not null)

@@ -1,4 +1,6 @@
+using NotificationTest.Common;
 using NotificationTest.Components;
+using NotificationTest.Services;
 
 namespace NotificationTest;
 
@@ -14,8 +16,6 @@ public class Program
 
         // SignalR 서비스 추가
         builder.Services.AddSignalR();
-        builder.Services.AddServerSideBlazor();
-        builder.Services.AddRazorPages();
 
         // 알림 서비스 추가
         builder.Services.AddScoped<NotificationService>();
@@ -26,7 +26,6 @@ public class Program
         if (!app.Environment.IsDevelopment())
         {
             app.UseExceptionHandler("/Error");
-            // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
             app.UseHsts();
         }
 
