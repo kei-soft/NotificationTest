@@ -1,6 +1,4 @@
 ﻿@page "/"
-@using Microsoft.AspNetCore.SignalR.Client
-@inject NavigationManager Navigation
 @rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
@@ -89,57 +87,18 @@
 
 
 @code {
-    private HubConnection? hubConnection;
-    private PopupItem? currentPopup;
-
+    
     protected override async Task OnInitializedAsync()
     {
-        hubConnection = new HubConnectionBuilder()
-                .WithUrl(Navigation.ToAbsoluteUri("/notificationhub"))
-                .Build();
-
-        hubConnection.On<string, string, string>("ReceiveNotification", (title, message, type) =>
-        {
-            Console.WriteLine($"알림 수신: {title} - {message} - {type}");
-
-            var notification = new NotificationItem
-                {
-                    Id = 1,
-                    Title = title,
-                    Message = message,
-                    Type = type,
-                    Timestamp = DateTime.Now
-                };
-
-            InvokeAsync(StateHasChanged);
-
-            // 5초 후 자동 제거
-            _ = Task.Delay(5000).ContinueWith(_ =>
-            {
-                //RemoveNotification(notification.Id);
-            });
-        });
-
-        hubConnection.On<string, string, string>("ReceivePopup", (title, message, type) =>
-        {
-            Console.WriteLine($"팝업 수신: {title} - {message} - {type}");
-
-            currentPopup = new PopupItem
-                {
-                    Title = title,
-                    Message = message,
-                    Type = type
-                };
-
-            InvokeAsync(StateHasChanged);
-        });
-
-        await hubConnection.StartAsync();
+        
     }
-
+    
+    @inject NotificationService NotificationService
 
     private async void SendMessage()
     {
-        await hubConnection.SendAsync("ReceiveNotification", "알림 제목", "알림 내용", "info");
+        await NotificationService.SendNotificationToAll("알림 제목", "알림 내용", "info");
+
+        //await hubConnection.SendAsync("ReceiveNotification", "알림 제목", "알림 내용", "info");
     }
 }

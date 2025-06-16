@@ -3,6 +3,7 @@
 @inject IJSRuntime JSRuntime
 @inject NavigationManager Navigation
 @implements IAsyncDisposable
+@rendermode InteractiveServer
 
 <!-- 디버깅용 정보 -->
 <div style="position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; font-size: 12px; z-index: 9999;">
@@ -55,60 +56,64 @@
     private PopupItem? currentPopup;
     private int notificationIdCounter = 0;
 
-    protected override async Task OnInitializedAsync()
+    protected  override async Task OnAfterRenderAsync(bool firstRender)
     {
-        try
+        if (firstRender)
         {
-            hubConnection = new HubConnectionBuilder()
-                .WithUrl(Navigation.ToAbsoluteUri("/notificationhub"))
-                .Build();
-
-            hubConnection.On<string, string, string>("ReceiveNotification", (title, message, type) =>
+            try
             {
-                Console.WriteLine($"알림 수신: {title} - {message} - {type}");
+                hubConnection = new HubConnectionBuilder()
+                    .WithUrl(Navigation.ToAbsoluteUri("/notificationhub"))
+                    .Build();
 
-                var notification = new NotificationItem
-                    {
-                        Id = ++notificationIdCounter,
-                        Title = title,
-                        Message = message,
-                        Type = type,
-                        Timestamp = DateTime.Now
-                    };
-
-                notifications.Add(notification);
-                Console.WriteLine($"알림 목록 개수: {notifications.Count}");
-                InvokeAsync(StateHasChanged);
-
-                // 5초 후 자동 제거
-                _ = Task.Delay(5000).ContinueWith(_ =>
+                hubConnection.On<string, string, string>("ReceiveNotification", (title, message, type) =>
                 {
-                    //RemoveNotification(notification.Id);
-                });
-            });
+                    Console.WriteLine($"알림 수신: {title} - {message} - {type}");
 
-            hubConnection.On<string, string, string>("ReceivePopup", (title, message, type) =>
-            {
-                Console.WriteLine($"팝업 수신: {title} - {message} - {type}");
+                    var notification = new NotificationItem
+                        {
+                            Id = ++notificationIdCounter,
+                            Title = title,
+                            Message = message,
+                            Type = type,
+                            Timestamp = DateTime.Now
+                        };
 
-                currentPopup = new PopupItem
+                    notifications.Add(notification);
+                    Console.WriteLine($"알림 목록 개수: {notifications.Count}");
+                    InvokeAsync(StateHasChanged);
+
+                    // 5초 후 자동 제거
+                    _ = Task.Delay(5000).ContinueWith(_ =>
                     {
-                        Title = title,
-                        Message = message,
-                        Type = type
-                    };
+                        //RemoveNotification(notification.Id);
+                    });
+                });
 
-                InvokeAsync(StateHasChanged);
-            });
+                hubConnection.On<string, string, string>("ReceivePopup", (title, message, type) =>
+                {
+                    Console.WriteLine($"팝업 수신: {title} - {message} - {type}");
 
-            await hubConnection.StartAsync();
-            Console.WriteLine($"SignalR 연결 상태: {hubConnection.State}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"SignalR 연결 오류: {ex.Message}");
+                    currentPopup = new PopupItem
+                        {
+                            Title = title,
+                            Message = message,
+                            Type = type
+                        };
+
+                    InvokeAsync(StateHasChanged);
+                });
+
+                await hubConnection.StartAsync();
+                Console.WriteLine($"SignalR 연결 상태: {hubConnection.State}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"SignalR 연결 오류: {ex.Message}");
+            }
         }
     }
+
 
     private void RemoveNotification(int id)
     {
